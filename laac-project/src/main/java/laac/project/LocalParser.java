@@ -1,8 +1,16 @@
 package laac.project;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
+import java.io.Reader;
 import java.net.InetAddress;
+import java.nio.file.Files;
+
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
 
 import com.maxmind.geoip2.DatabaseReader;
 import com.maxmind.geoip2.exception.GeoIp2Exception;
@@ -11,9 +19,15 @@ import com.maxmind.geoip2.model.CityResponse;
 public class LocalParser {
 
 	static DatabaseReader dbReader;
+	static CSVParser csvParser;
 
 	public static void main(String[] args) throws IOException, GeoIp2Exception {
 
+		loadIpAddressDB();
+		
+		for (CSVRecord record : csvParser) {
+			System.out.println(record.get("network"));
+		}
 		// InetAddress ipAddress = InetAddress.getByName(request.getRemoteHost());
 //		InetAddress ipAddress = InetAddress.getByName("78.91.101.80"); //norway
 //		InetAddress ipAddress = InetAddress.getByName("95.31.18.119"); //russia	
@@ -21,17 +35,29 @@ public class LocalParser {
 //		InetAddress ipAddress = InetAddress.getByName("146.227.159.62"); //de monfort
 		InetAddress ipAddress = InetAddress.getByName("193.61.201.205"); // kings college
 				
-		loadDB();
-		System.out.println(parse(ipAddress));	
+		loadGeoIpDB();
+		System.out.println(parse(ipAddress));
 
 	}
 
 	/**
 	 * @throws IOException
 	 */
-	private static void loadDB() throws IOException {
+	private static void loadGeoIpDB() throws IOException {
 		File database = new File(LocalParser.class.getClassLoader().getResource("GeoLite2-City.mmdb").getFile());
 		dbReader = new DatabaseReader.Builder(database).build();
+	}
+	
+	/**
+	 * @throws IOException
+	 */
+	private static void loadIpAddressDB() throws IOException {
+		File database = new File(LocalParser.class.getClassLoader().getResource("geoip2-ipv4.csv").getFile());
+		BufferedReader ipReader = new BufferedReader(new FileReader(database));
+        csvParser = new CSVParser(ipReader, CSVFormat.DEFAULT.withHeader("network", "geoname_id", "continent_code", "continent_name",
+        		"country_iso_code","country_name", "is_anonymous_proxy", "is_satellite_provider")
+                .withIgnoreHeaderCase()
+                .withTrim());
 	}
 
 	/**
